@@ -166,7 +166,12 @@ func (s *Subscription) Start(ctx context.Context, startLSN uint64, h Handler) (e
 			}
 
 			if message == nil {
-				return fmt.Errorf("replication failed: nil message received, should not happen")
+				if s.conn.IsAlive() {
+					return fmt.Errorf("replication failed: nil message received, should not happen")
+				}
+				// PGX seems to return a nil message without an error if the connection has
+				// closed.
+				return pgx.ErrDeadConn
 			}
 
 			if message.WalMessage != nil {
